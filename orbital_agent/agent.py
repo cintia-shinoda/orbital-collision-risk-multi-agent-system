@@ -1,10 +1,9 @@
-"""Sistema multi-agente de análise de risco orbital (ADK SequentialAgent).
+"""Multi-agent orbital collision-risk pipeline (ADK SequentialAgent).
 
-Três sub-agentes especializados executam em ordem fixa, compartilhando o
-estado da sessão:
-  1. data_agent     -> tria conjunções e classifica risco (tool MCP)
-  2. analysis_agent -> avalia criticidade na rede do enxame (tool MCP)
-  3. briefing_agent -> sintetiza o briefing operacional em português
+Three specialized sub-agents run in a fixed order, sharing session state:
+  1. data_agent     -> screens conjunctions and classifies risk (MCP tool)
+  2. analysis_agent -> assesses criticality in the swarm network (MCP tool)
+  3. briefing_agent -> writes the operational briefing in English
 """
 import os
 
@@ -16,7 +15,7 @@ from mcp import StdioServerParameters
 _MODEL = "gemini-2.5-flash"
 _SERVER_PATH = os.path.join(os.path.dirname(__file__), "mcp_server.py")
 
-# Toolset MCP compartilhado (sobe o servidor como subprocesso via stdio)
+# Shared MCP toolset (spawns the server as a stdio subprocess)
 _orbital_tools = McpToolset(
     connection_params=StdioConnectionParams(
         server_params=StdioServerParameters(
@@ -26,57 +25,60 @@ _orbital_tools = McpToolset(
     ),
 )
 
-# --- Sub-agente 1: dados ---
+# --- Sub-agent 1: data ---
 data_agent = LlmAgent(
     model=_MODEL,
     name="data_agent",
-    description="Tria conjunções do objeto-alvo e classifica o risco de cada uma.",
+    description="Screens conjunctions for the target object and classifies each one's risk.",
     instruction=(
-        "Você é o agente de dados orbitais. Dado um número de catálogo NORAD, "
-        "use a ferramenta analyze_conjunctions para obter as conjunções e suas "
-        "classificações de risco. Relate de forma objetiva: total de conjunções, "
-        "quantas são acionáveis, e a lista das principais com distância, "
-        "velocidade relativa e flag de risco. Não invente dados."
+        "You are the orbital data agent. Given a NORAD catalog number, call the "
+        "analyze_conjunctions tool to retrieve conjunctions and their risk "
+        "classifications. Report results factually. You MUST quote the exact integer "
+        "fields returned by the tool: n_conjunctions and n_actionable. Never "
+        "estimate, round, or change these numbers. List the top conjunctions with "
+        "neighbor catalog number, minimum distance (km), relative speed (km/s), time "
+        "to closest approach (minutes), and risk flag. Do not invent data."
     ),
     tools=[_orbital_tools],
-    output_key="dados_conjuncoes",
+    output_key="conjunction_data",
 )
 
-# --- Sub-agente 2: análise de rede ---
+# --- Sub-agent 2: network analysis ---
 analysis_agent = LlmAgent(
     model=_MODEL,
     name="analysis_agent",
-    description="Avalia a criticidade do objeto na rede de conjunções do enxame.",
+    description="Assesses the object's criticality in the swarm conjunction network.",
     instruction=(
-        "Você é o agente de análise de rede. Use a ferramenta network_role para "
-        "medir a centralidade do objeto-alvo na rede de risco do enxame. "
-        "Interprete: percentil alto (>0.7) indica um HUB — objeto cuja "
-        "fragmentação propagaria a cascata de detritos; percentil baixo indica "
-        "objeto periférico. Combine com os dados de conjunção a seguir:\n\n"
-        "{dados_conjuncoes}\n\n"
-        "Produza um veredito de risco em duas dimensões: risco de colisão "
-        "(das conjunções acionáveis) e criticidade estrutural (da centralidade)."
+        "You are the network analysis agent. Call the network_role tool to measure "
+        "the target's centrality in the swarm's risk network. Interpret it: a high "
+        "percentile (>0.7) means the object is a HUB whose fragmentation would "
+        "propagate the debris cascade; a low percentile means it is peripheral. "
+        "Combine this with the conjunction data below:\n\n{conjunction_data}\n\n"
+        "Produce a two-axis risk verdict: (1) collision risk, derived ONLY from the "
+        "exact actionable-conjunction count reported above; and (2) structural "
+        "criticality, from the centrality percentile. Do not alter any numbers."
     ),
     tools=[_orbital_tools],
-    output_key="analise_risco",
+    output_key="risk_analysis",
 )
 
-# --- Sub-agente 3: briefing ---
+# --- Sub-agent 3: briefing ---
 briefing_agent = LlmAgent(
     model=_MODEL,
     name="briefing_agent",
-    description="Sintetiza o briefing operacional final.",
+    description="Writes the final operational briefing.",
     instruction=(
-        "Você é o agente de briefing. Com base na análise a seguir, escreva um "
-        "briefing operacional conciso em português para um operador de satélite. "
-        "Estrutura: (1) resumo do alvo, (2) conjunções acionáveis com prazo até a "
-        "aproximação, (3) criticidade do objeto na rede, (4) recomendação. "
-        "Tom técnico e direto.\n\nAnálise:\n{analise_risco}"
+        "You are the briefing agent. Based on the analysis below, write a concise "
+        "operational briefing in English for a satellite operator. Structure: "
+        "(1) target summary, (2) actionable conjunctions with time to closest "
+        "approach, (3) the object's criticality in the network, (4) recommendation. "
+        "Use ONLY the exact figures present in the analysis; do not introduce new "
+        "numbers. Keep the tone technical and direct.\n\nAnalysis:\n{risk_analysis}"
     ),
-    output_key="briefing_final",
+    output_key="final_briefing",
 )
 
-# --- Orquestração sequencial ---
+# --- Sequential orchestration ---
 root_agent = SequentialAgent(
     name="orbital_risk_pipeline",
     sub_agents=[data_agent, analysis_agent, briefing_agent],
