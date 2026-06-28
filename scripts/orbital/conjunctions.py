@@ -96,10 +96,72 @@ def screen_conjunctions(
     return result.join(catalog, on="neighbor_catnr", how="left")
 
 
+def screen_all_pairs(
+    hours: float = 24.0,
+    step_minutes: float = 5.0,
+    threshold_km: float = 50.0,
+) -> pl.DataFrame:
+    """Tria TODOS os pares de conjunção dentro do catálogo (all-on-all).
+
+    Constrói a rede de risco do enxame: cada aresta é um par de objetos que
+    se aproxima abaixo do limiar em algum instante da janela.
+
+    Returns:
+        DataFrame: catnr_a, catnr_b, min_distance_km, rel_speed_km_s.
+        (catnr_a < catnr_b sempre, para evitar arestas duplicadas.)
+    """
+    sats = load_satellites()
+    times, positions = propagate(sats, hours=hours, step_minutes=step_minutes)
+    catnrs = np.array([s.model.satnum for s in sats])
+    n_steps = positions.shape[1]
+
+    # --- Estágio 1: KDTree query_pairs a cada instante (filtro grosso) ---
+    candidate_pairs: set[tuple[int, int]] = set()
+    for t in range(n_steps):
+        tree = cKDTree(positions[:, t, :])
+        # query_pairs devolve todos os pares (i, j) dentro do limiar
+        candidate_pairs.update(tree.query_pairs(r=threshold_km))
+
+    # --- Estágio 2: refino exato por par candidato ---
+    rows = []
+    for i, j in candidate_pairs:
+        dist = np.linalg.norm(positions[i] - positions[j], axis=1)  # (T,)
+        t_ca = int(np.argmin(dist))
+
+        v_i = sats[i].at(times[t_ca]).velocity.km_per_s
+        v_j = sats[j].at(times[t_ca]).velocity.km_per_s
+        rel_speed = float(np.linalg.norm(v_i - v_j))
+
+        # Ordena o par por catnr para aresta canônica (sem duplicar)
+        a, b = sorted((int(catnrs[i]), int(catnrs[j])))
+        rows.append(
+            {
+                "catnr_a": a,
+                "catnr_b": b,
+                "min_distance_km": round(float(dist[t_ca]), 3),
+                "rel_speed_km_s": round(rel_speed, 3),
+            }
+        )
+
+    schema = {
+        "catnr_a": pl.Int64,
+        "catnr_b": pl.Int64,
+        "min_distance_km": pl.Float64,
+        "rel_speed_km_s": pl.Float64,
+    }
+    if not rows:
+        return pl.DataFrame(schema=schema)
+
+    return pl.DataFrame(rows).unique(subset=["catnr_a", "catnr_b"]).sort("min_distance_km")
+
+
 if __name__ == "__main__":
-    # Alvo: COSMOS 2251 (o satélite-pai, NORAD 22675)
-    conjunctions = screen_conjunctions(
-        target_catnr=22675, hours=24.0, step_minutes=5.0, threshold_km=50.0
-    )
-    print(f"Candidatos a conjunção: {conjunctions.height}")
-    print(conjunctions.head(10))
+    edges = screen_all_pairs(hours=72.0, step_minutes=5.0, threshold_km=100.0)
+    edges.write_parquet(_DATA_DIR / "conjunction_edges.parquet")
+
+    print(f"Arestas (pares de conjunção): {edges.height}")
+    print(edges.head(10))
+
+    # Quantos objetos distintos participam de ao menos uma conjunção?
+    nodes = set(edges["catnr_a"].to_list()) | set(edges["catnr_b"].to_list())
+    print(f"Nós com ao menos uma aresta: {len(nodes)}")
