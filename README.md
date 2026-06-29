@@ -1,8 +1,15 @@
-# Orbital Collision-Risk Agent
+# Orbital Collision-Risk Multi-Agent System
 
 A multi-agent system that assesses satellite collision risk in real time. Given a NORAD catalog number, it screens the object against a live debris catalog, classifies each close approach with a model trained on real European Space Agency data, measures the object's structural criticality in the conjunction network, and produces an operational briefing — visualized on an interactive 3D globe.
 
-**Capstone track:** Freestyle · **Built with:** Google ADK 2.x, MCP, Gemini, Skyfield, LightGBM, NetworkX, CesiumJS
+**Capstone track:** Freestyle
+**Built with:** Google ADK 2.x, MCP, Gemini, Skyfield, LightGBM, NetworkX, CesiumJS
+
+
+<p align="center">
+  <img src="assets/demo.gif" width="800" alt="Demo">
+</p>
+
 
 ---
 
@@ -93,25 +100,35 @@ The ROC-AUC of 0.86 shows the model ranks risk reliably; the operating threshold
 
 ## Setup
 
-> Requires Python 3.11 and a Gemini API key (Google AI Studio). On macOS, LightGBM needs OpenMP: `brew install libomp`.
+> Requires Python 3.11 and a Gemini API key (Google AI Studio). 
+> On macOS, LightGBM needs OpenMP: `brew install libomp`.
 
-```bash
+
 # 1. Environment
+```bash
 python3.11 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+```
 
 # 2. Credentials (never committed)
+```bash
 echo "GOOGLE_API_KEY=your_key_here" > orbital_agent/.env
+```
 
 # 3. Build the data layer (debris catalog + conjunction network)
+```bash
 python scripts/orbital/fetch_tle.py
 python scripts/orbital/conjunctions.py
 python scripts/orbital/graph.py
+```
 
 # 4. (Optional) reproduce the classifier and its metrics
+```bash
 python scripts/risk/evaluate.py
+```
 
 # 5. Run the agent
+```bash
 adk web orbital_agent
 ```
 
@@ -122,21 +139,26 @@ Then ask, for example: *"Analyze the collision risk for object 22675."*
 ```bash
 python viz/generate_czml.py
 cd viz && python -m http.server 8080
-# open http://localhost:8080/index.html
 ```
+
+open: http://localhost:8080/index.html
+
 
 ## Project structure
 
-```
-.
+```bash
+
+orbital-collision-risk-multi-agent-system/
 ├── orbital_agent/          # ADK multi-agent system + MCP server
 │   ├── agent.py
 │   └── mcp_server.py
+│
 ├── scripts/
 │   ├── orbital/            # fetch_tle, propagate, conjunctions
 │   └── risk/               # graph, classifier, evaluate
-├── viz/                    # generate_czml + CesiumJS page + CZML
-└── docs/                   # diagrams
+│
+└── viz/                    # generate_czml + CesiumJS page + CZML
+
 ```
 
 ## Limitations and next steps
