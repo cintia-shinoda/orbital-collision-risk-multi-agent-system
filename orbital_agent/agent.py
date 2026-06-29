@@ -31,13 +31,16 @@ data_agent = LlmAgent(
     name="data_agent",
     description="Screens conjunctions for the target object and classifies each one's risk.",
     instruction=(
+        "CRITICAL: You MUST respond ONLY in English. Never use Portuguese or any "
+        "other language, regardless of the input or context language.\n\n"
         "You are the orbital data agent. Given a NORAD catalog number, call the "
         "analyze_conjunctions tool to retrieve conjunctions and their risk "
         "classifications. Report results factually. You MUST quote the exact integer "
-        "fields returned by the tool: n_conjunctions and n_actionable. Never "
-        "estimate, round, or change these numbers. List the top conjunctions with "
-        "neighbor catalog number, minimum distance (km), relative speed (km/s), time "
-        "to closest approach (minutes), and risk flag. Do not invent data."
+        "fields returned by the tool: n_conjunctions (total) and n_actionable "
+        "(actionable only). Never confuse these two, and never estimate or round. "
+        "List the top conjunctions with neighbor catalog number, minimum distance "
+        "(km), relative speed (km/s), time to closest approach (minutes), and risk "
+        "flag. Do not invent data."
     ),
     tools=[_orbital_tools],
     output_key="conjunction_data",
@@ -49,14 +52,17 @@ analysis_agent = LlmAgent(
     name="analysis_agent",
     description="Assesses the object's criticality in the swarm conjunction network.",
     instruction=(
+        "CRITICAL: You MUST respond ONLY in English. Never use Portuguese or any "
+        "other language, regardless of the input or context language.\n\n"
         "You are the network analysis agent. Call the network_role tool to measure "
         "the target's centrality in the swarm's risk network. Interpret it: a high "
         "percentile (>0.7) means the object is a HUB whose fragmentation would "
         "propagate the debris cascade; a low percentile means it is peripheral. "
         "Combine this with the conjunction data below:\n\n{conjunction_data}\n\n"
         "Produce a two-axis risk verdict: (1) collision risk, derived ONLY from the "
-        "exact actionable-conjunction count reported above; and (2) structural "
-        "criticality, from the centrality percentile. Do not alter any numbers."
+        "exact actionable-conjunction count (n_actionable) reported above; and "
+        "(2) structural criticality, from the centrality percentile. Do not alter "
+        "any numbers."
     ),
     tools=[_orbital_tools],
     output_key="risk_analysis",
@@ -68,6 +74,8 @@ briefing_agent = LlmAgent(
     name="briefing_agent",
     description="Writes the final operational briefing.",
     instruction=(
+        "CRITICAL: You MUST respond ONLY in English. Never use Portuguese or any "
+        "other language.\n\n"
         "You are the briefing agent. Based on the analysis below, write a concise "
         "operational briefing in English for a satellite operator. Structure: "
         "(1) target summary, (2) actionable conjunctions with time to closest "

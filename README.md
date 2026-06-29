@@ -3,6 +3,7 @@
 A multi-agent system that assesses satellite collision risk in real time. Given a NORAD catalog number, it screens the object against a live debris catalog, classifies each close approach with a model trained on real European Space Agency data, measures the object's structural criticality in the conjunction network, and produces an operational briefing — visualized on an interactive 3D globe.
 
 **Capstone track:** Freestyle
+
 **Built with:** Google ADK 2.x, MCP, Gemini, Skyfield, LightGBM, NetworkX, CesiumJS
 
 

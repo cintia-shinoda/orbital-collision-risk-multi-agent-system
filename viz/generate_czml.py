@@ -14,7 +14,7 @@ import numpy as np
 import polars as pl
 from skyfield.api import load, wgs84
 
-_ROOT = Path(__file__).resolve().parents[2]
+_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_ROOT / "scripts" / "orbital"))
 sys.path.insert(0, str(_ROOT / "scripts" / "risk"))
 
@@ -24,9 +24,9 @@ from classifier import classify_conjunctions  # noqa: E402
 
 _VIZ_DIR = _ROOT / "viz"
 
-_COLOR_TARGET = [255, 255, 0, 255]     # yellow
-_COLOR_NEIGHBOR = [255, 90, 40, 255]   # red-orange
-_COLOR_LINE = [255, 0, 0, 220]         # red
+_COLOR_TARGET = [181, 70, 47, 255]      # red
+_COLOR_NEIGHBOR = [200, 205, 210, 255]   # gray
+_COLOR_LINE = [224, 176, 90, 255]       # gold
 
 
 def _iso(t) -> str:
@@ -116,9 +116,9 @@ def build_czml(target_catnr: int, hours: float = 24.0,
             "name": f"{cat} (debris)",
             "availability": f"{epoch_iso}/{end_iso}",
             "position": _position_property(nsat, times, epoch_iso),
-            "point": {"color": {"rgba": _COLOR_NEIGHBOR}, "pixelSize": 8},
+            "point": {"color": {"rgba": _COLOR_NEIGHBOR}, "pixelSize": 10},
             "path": {"material": {"solidColor": {"color": {"rgba": _COLOR_NEIGHBOR}}},
-                     "width": 1, "leadTime": 0, "trailTime": 3600, "resolution": 120},
+            "width": 2, "leadTime": 0, "trailTime": 3600, "resolution": 120},
         })
 
         nxyz = nsat.at(times).position.km.T
@@ -127,8 +127,8 @@ def build_czml(target_catnr: int, hours: float = 24.0,
         if dist[tca_k] > 100.0:
             continue  # no genuine close approach in-window; no flash
         tca = times[tca_k]
-        lo = ts.tt_jd(tca.tt - 3 / (24 * 60))   # +/- 3 min around TCA
-        hi = ts.tt_jd(tca.tt + 3 / (24 * 60))
+        lo = ts.tt_jd(tca.tt - 30 / (24 * 60))   # +/- 3 min around TCA
+        hi = ts.tt_jd(tca.tt + 30 / (24 * 60))
         packets.append({
             "id": f"line-{cat}",
             "availability": f"{_iso(lo)}/{_iso(hi)}",
@@ -136,7 +136,7 @@ def build_czml(target_catnr: int, hours: float = 24.0,
                 "positions": {"references": [
                     f"sat-{target_catnr}#position", f"sat-{cat}#position"]},
                 "material": {"solidColor": {"color": {"rgba": _COLOR_LINE}}},
-                "width": 3,
+                "width": 6,
             },
         })
 
