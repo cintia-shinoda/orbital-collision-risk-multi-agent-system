@@ -7,7 +7,7 @@ A multi-agent system that assesses satellite collision risk in real time. Given 
 
 
 <p align="center">
-  <img src="assets/demo.gif" width="800" alt="Demo">
+  <img src="assets/demo-small.gif" width="800" alt="Demo">
 </p>
 
 
@@ -158,7 +158,6 @@ orbital-collision-risk-multi-agent-system/
 │   └── risk/               # graph, classifier, evaluate
 │
 └── viz/                    # generate_czml + CesiumJS page + CZML
-
 ```
 
 ## Limitations and next steps
