@@ -7,9 +7,8 @@ A multi-agent system that assesses satellite collision risk in real time. Given 
 **Built with:** Google ADK 2.x, MCP, Gemini, Skyfield, LightGBM, NetworkX, CesiumJS
 
 
-<p align="center">
-  <img src="assets/demo-small.gif" width="800" alt="Demo">
-</p>
+
+https://github.com/user-attachments/assets/62da2d20-e5ff-4542-a890-c1e4864db8fb
 
 
 ---
