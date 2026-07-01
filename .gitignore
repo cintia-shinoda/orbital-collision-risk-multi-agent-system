@@ -1,9 +1,9 @@
-venv/
+.DS_Store
+.vscode/
+**/venv/
 __pycache__/
 *.pyc
 .env
 data/
-.DS_Store
 data/esa/
-
 orbital_agent/.adk/

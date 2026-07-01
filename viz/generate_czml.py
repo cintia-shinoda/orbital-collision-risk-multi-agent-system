@@ -25,7 +25,7 @@ from classifier import classify_conjunctions  # noqa: E402
 _VIZ_DIR = _ROOT / "viz"
 
 _COLOR_TARGET = [181, 70, 47, 255]      # red
-_COLOR_NEIGHBOR = [200, 205, 210, 255]   # gray
+_COLOR_NEIGHBOR = [200, 205, 210, 255]  # gray
 _COLOR_LINE = [224, 176, 90, 255]       # gold
 
 
