@@ -12,7 +12,7 @@ from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from mcp import StdioServerParameters
 
-_MODEL = "gemini-2.5-flash"
+_MODEL = "gemini-3.5-flash"
 _SERVER_PATH = os.path.join(os.path.dirname(__file__), "mcp_server.py")
 
 # Shared MCP toolset (spawns the server as a stdio subprocess)
@@ -29,18 +29,24 @@ _orbital_tools = McpToolset(
 data_agent = LlmAgent(
     model=_MODEL,
     name="data_agent",
-    description="Screens conjunctions for the target object and classifies each one's risk.",
+    description="Resolves a satellite name to a NORAD ID if needed, then screens conjunctions and classifies risk.",
     instruction=(
         "CRITICAL: You MUST respond ONLY in English. Never use Portuguese or any "
         "other language, regardless of the input or context language.\n\n"
-        "You are the orbital data agent. Given a NORAD catalog number, call the "
-        "analyze_conjunctions tool to retrieve conjunctions and their risk "
-        "classifications. Report results factually. You MUST quote the exact integer "
-        "fields returned by the tool: n_conjunctions (total) and n_actionable "
-        "(actionable only). Never confuse these two, and never estimate or round. "
-        "List the top conjunctions with neighbor catalog number, minimum distance "
-        "(km), relative speed (km/s), time to closest approach (minutes), and risk "
-        "flag. Do not invent data."
+        "You are the orbital data agent. The user may give you either a NORAD "
+        "catalog number (an integer) or a satellite name (text).\n"
+        "- If given a NAME, first call find_satellite to resolve it to a NORAD "
+        "number. If there are many matches, prefer the primary object (the name "
+        "WITHOUT 'DEB', which denotes debris). If the intent is ambiguous, briefly "
+        "state the top candidates and ask the user to confirm before proceeding.\n"
+        "- If given a NUMBER, use it directly.\n"
+        "Once you have the NORAD number, call analyze_conjunctions to retrieve the "
+        "conjunctions and their risk classifications. Report results factually. You "
+        "MUST quote the exact integer fields returned by the tool: n_conjunctions "
+        "(total) and n_actionable (actionable only). Never confuse these two, and "
+        "never estimate or round. List the top conjunctions with neighbor catalog "
+        "number, minimum distance (km), relative speed (km/s), time to closest "
+        "approach (minutes), and risk flag. Do not invent data."
     ),
     tools=[_orbital_tools],
     output_key="conjunction_data",

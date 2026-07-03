@@ -97,6 +97,29 @@ def network_role(target_catnr: int) -> dict:
         "centrality_percentile": round(row["pctl"], 3),
     }
 
+@mcp.tool()
+def find_satellite(name: str) -> dict:
+    """Find NORAD catalog numbers by (partial) object name in the local catalog.
+
+    Args:
+        name: full or partial object name (case-insensitive), e.g. "COSMOS 2251".
+
+    Returns:
+        dict with the matches found (name + NORAD number), limited to 20.
+    """
+    catalog = pl.read_parquet(_ROOT / "data" / "catalog.parquet")
+    matches = catalog.filter(
+        pl.col("OBJECT_NAME").str.to_uppercase().str.contains(name.upper(), literal=True)
+    ).select(
+        pl.col("OBJECT_NAME").alias("name"),
+        pl.col("NORAD_CAT_ID").alias("catnr"),
+    ).head(20)
+
+    return {
+        "query": name,
+        "n_matches": matches.height,
+        "matches": matches.to_dicts(),
+    }
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
